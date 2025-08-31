@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sleep Time Assistant — Drift off, gently</title>
+  <meta name="description" content="A soothing, mobile-first sleep assistant with wind-down routines, calming sounds, and a simple sleep tracker." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1020;
+      --bg-2:#101530;
+      --card:#111630;
+      --text:#eaeef7;
+      --muted:#b8c0d6;
+      --accent:#a78bfa;     /* lavender */
+      --accent-2:#6ee7b7;   /* mint */
+      --soft:#2a2f4a;
+      --ring: rgba(167,139,250,.45);
+      --radius:16px;
+      --shadow: 0 12px 36px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background: radial-gradient(1100px 700px at 70% -10%, #1a1f3f, var(--bg)) no-repeat fixed; color:var(--text); font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+    .container{width:min(1100px,92%);margin:0 auto}
+
+    /* Nav */
+    .nav{position:sticky;top:0;background:rgba(11,16,32,.6);backdrop-filter:saturate(160%) blur(8px);border-bottom:1px solid rgba(255,255,255,.06);z-index:10}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
+    .logo{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg, #7367f0, #a78bfa);box-shadow:var(--shadow)}
+    .logo svg{filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+    .menu{display:flex;gap:16px}
+    .menu a{color:var(--muted);padding:8px 10px;border-radius:8px}
+    .menu a:hover{color:var(--text);background:rgba(255,255,255,.05)}
+    .cta{background:linear-gradient(135deg,var(--accent),#7dd3fc);color:#0b1020;padding:10px 14px;border-radius:12px;font-weight:700}
+
+    /* Hero */
+    .hero{padding:72px 0 44px}
+    .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:center}
+    .kicker{color:var(--accent);font-weight:600;letter-spacing:.3px}
+    h1{font-size:clamp(28px,5vw,46px);line-height:1.08;margin:12px 0 14px}
+    .sub{color:var(--muted);font-size:clamp(15px,2.2vw,18px);max-width:60ch}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+    .ghost{border:1px solid rgba(255,255,255,.12);padding:10px 14px;border-radius:12px;color:var(--text)}
+
+    .card{background:linear-gradient(180deg, var(--card), #0e1330); border:1px solid rgba(255,255,255,.06); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow)}
+    .mock{aspect-ratio:16/10;border-radius:12px;background:linear-gradient(145deg,#1b2144,#0f1430);display:grid;place-items:center;color:#b8c5ff}
+
+    .section{padding:56px 0}
+    .section h2{font-size:clamp(22px,4vw,30px);margin:0 0 16px}
+    .muted{color:var(--muted)}
+
+    /* Routine */
+    .routine{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .steps{display:grid;gap:10px}
+    .step{padding:14px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(255,255,255,.02)}
+    .step.active{outline:2px solid var(--ring)}
+    .progress{height:8px;background:#20274a;border-radius:999px;overflow:hidden}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#60a5fa)}
+
+    /* Sounds */
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .sound{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+    .sound .title{display:flex;align-items:center;gap:10px}
+    .badge{font-size:12px;color:#0b1020;background:linear-gradient(135deg,var(--accent-2),#7dd3fc);padding:4px 8px;border-radius:999px;font-weight:700}
+    .play{cursor:pointer;background:#1a2046;border:1px solid rgba(255,255,255,.08);color:var(--text);padding:8px 10px;border-radius:10px}
+    .play.active{background:linear-gradient(135deg,var(--accent),#60a5fa);color:#0b1020;font-weight:700}
+
+    /* Tracker */
+    form{display:grid;gap:12px}
+    input, textarea, select{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.02);color:var(--text)}
+    .note{font-size:13px;color:var(--muted)}
+    .table{width:100%;border-collapse:collapse;font-size:14px}
+    .table th,.table td{border-bottom:1px solid rgba(255,255,255,.08);padding:10px;text-align:left}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06)}
+
+    /* Tip */
+    .tip{display:flex;align-items:flex-start;gap:12px}
+    .tip .sparkle{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#7dd3fc,var(--accent));color:#0b1020;font-weight:900}
+
+    /* Footer */
+    footer{padding:40px 0;border-top:1px solid rgba(255,255,255,.06);color:var(--muted)}
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .hero-grid, .routine, .grid-3{grid-template-columns:1fr}
+      .menu{display:none}
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Main">
+    <div class="container nav-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 1 0 21 12.79z" fill="white" opacity=".9"/>
+          </svg>
+        </div>
+        <span>Sleep Time Assistant</span>
+      </div>
+      <div class="menu" role="navigation" aria-label="Primary">
+        <a href="#routine">Routine</a>
+        <a href="#sounds">Sounds</a>
+        <a href="#tracker">Tracker</a>
+        <a href="#contact" class="cta">Feedback</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="kicker">Breathe. Soften. Let go.</div>
+        <h1>Your nightly guide to better sleep</h1>
+        <p class="sub">Ease into rest with a gentle wind‑down routine, calming soundscapes, and a simple way to track how you feel. The clock adapts to your local time and nudges you when it’s time to slow down.</p>
+        <div class="hero-actions">
+          <a href="#routine" class="cta">Start tonight’s routine</a>
+          <a href="#sounds" class="ghost">Explore sleep sounds</a>
+        </div>
+        <p class="note" id="countdownNote">Set your bedtime below to see a soft reminder.</p>
+      </div>
+      <div class="card">
+        <div class="mock" id="countdownBox" aria-live="polite">
+          Set a bedtime to begin the wind‑down.
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="routine" class="section">
+    <div class="container">
+      <h2>Wind‑down routine</h2>
+      <div class="routine">
+        <div class="card">
+          <label class="note">Your target bedtime</label>
+          <input id="bedtime" type="time" value="23:00" aria-label="Target bedtime">
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+            <label style="display:flex;align-items:center;gap:8px">
+              <input id="reminderToggle" type="checkbox"> <span class="note">Gentle reminder before bedtime (20 minutes)</span>
+            </label>
+            <span id="reminderStatus" class="note"></span>
+          </div>
+        </div>
+
+        <div class="steps">
+          <div class="step active" id="step1">
+            <strong>1. Breathing — 4‑7‑8</strong>
+            <p class="muted">Inhale 4, hold 7, exhale 8. Follow the circle. 3 rounds.</p>
+            <div class="progress" aria-hidden="true"><div class="bar" id="breathBar"></div></div>
+            <div style="display:flex;gap:10px;margin-top:10px">
+              <button class="play" id="startBreath">Start</button>
+              <span class="note" id="breathStatus">Ready</span>
+            </div>
+          </div>
+
+          <div class="step" id="step2">
+            <strong>2. Gentle stretch — 2 minutes</strong>
+            <p class="muted">Neck rolls, shoulder circles, then slow forward fold. Move softly.</p>
+            <div style="display:flex;gap:10px;margin-top:10px">
+              <button class="play" id="startStretch">Start 2:00</button>
+              <span class="note" id="stretchStatus">Unstarted</span>
+            </div>
+          </div>
+
+          <div class="step" id="step3">
+            <strong>3. Light journaling — 3 prompts</strong>
+            <p class="muted">Write one line for each: 1) What felt good today? 2) What can wait until tomorrow? 3) One gentle intention.</p>
+            <textarea id="journal" placeholder="A few soft lines…"></textarea>
+            <div style="display:flex;gap:10px;margin-top:10px">
+              <button class="play" id="saveJournal">Save</button>
+              <span class="note" id="journalStatus">Unsaved</span>
+            </div>
+          </div>
+
+          <div class="step" id="step4">
+            <strong>4. Lights low, sound on</strong>
+            <p class="muted">Dim your screen. Choose a soundscape below and set volume low.</p>
+            <a href="#sounds" class="play">Open sounds</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sounds" class="section">
+    <div class="container">
+      <h2>Calming soundscapes</h2>
+      <p class="muted">Add your own MP3s in assets/sounds and update the list. Volume low is best for sleep.</p>
+      <div class="grid-3" id="soundList">
+        <div class="card sound" data-src="assets/sounds/rain.mp3">
+          <div class="title"><span class="badge">Rain</span> <span class="muted">Soft drizzle</span></div>
+          <button class="play">Play</button>
+        </div>
+        <div class="card sound" data-src="assets/sounds/ocean.mp3">
+          <div class="title"><span class="badge">Ocean</span> <span class="muted">Gentle waves</span></div>
+          <button class="play">Play</button>
+        </div>
+        <div class="card sound" data-src="assets/sounds/lofi.mp3">
+          <div class="title"><span class="badge">Lo‑fi</span> <span class="muted">Slow, warm</span></div>
+          <button class="play">Play</button>
+        </div>
+      </div>
+      <audio id="player" preload="none"></audio>
+      <p class="note" id="soundStatus" style="margin-top:8px">No sound playing.</p>
+    </div>
+  </section>
+
+  <section id="tracker" class="section">
+    <div class="container">
+      <h2>Sleep tracker</h2>
+      <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div>
+          <form id="logForm">
+            <label>
+              <span class="note">Date</span>
+              <input type="date" id="logDate" required>
+            </label>
+            <label>
+              <span class="note">Bedtime</span>
+              <input type="time" id="logBed" required>
+            </label>
+            <label>
+              <span class="note">Wake time</span>
+              <input type="time" id="logWake" required>
+            </label>
+            <label>
+              <span class="note">Mood on waking</span>
+              <select id="logMood">
+                <option value="Calm">Calm</option>
+                <option value="Okay">Okay</option>
+                <option value="Groggy">Groggy</option>
+                <option value="Alert">Alert</option>
+              </select>
+            </label>
+            <button class="cta" type="submit">Save entry</button>
+            <p class="note" id="logStatus">Not saved yet.</p>
+          </form>
+        </div>
+        <div>
+          <table class="table" aria-label="Recent sleep logs">
+            <thead>
+              <tr>
+                <th>Date</th><th>Duration</th><th>Mood</th>
+              </tr>
+            </thead>
+            <tbody id="logTable"></tbody>
+          </table>
+          <p class="note">Tip: Aim for a consistent window. Even small regularity helps your body learn safety.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tip" class="section">
+    <div class="container">
+      <h2>Tonight’s gentle nudge</h2>
+      <div class="card tip">
+        <div class="sparkle">✦</div>
+        <p id="tipText" class="muted">A small reminder appears here each night.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="section">
+    <div class="container">
+      <h2>Feedback and requests</h2>
+      <div class="card">
+        <form id="contactForm">
+          <label>
+            <span class="note">Your name</span>
+            <input type="text" name="name" required/>
+          </label>
+          <label>
+            <span class="note">Email</span>
+            <input type="email" name="email" required/>
+          </label>
+          <label>
+            <span class="note">Message</span>
+            <textarea name="message" placeholder="What would make this feel even safer and softer for you?" required></textarea>
+          </label>
+          <button class="cta" type="submit">Send message</button>
+          <p class="note">This demo confirms locally. I can wire it to email on deploy.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <p>© <span id="year"></span> Sleep Time Assistant. All rights reserved.</p>
+      <p><a href="#">Privacy</a> · <a href="#">Terms</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Utilities
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    // Year
+    $('#year').textContent = new Date().getFullYear();
+
+    // Smooth scroll for in-page links
+    $$('a[href^="#"]').forEach(a=>{
+      a.addEventListener('click', e=>{
+        const id = a.getAttribute('href').slice(1);
+        const el = document.getElementById(id);
+        if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth'}); }
+      });
+    });
+
+    // Bedtime countdown
+    const bedtimeInput = $('#bedtime');
+    const countdownBox = $('#countdownBox');
+    const reminderToggle = $('#reminderToggle');
+    const reminderStatus = $('#reminderStatus');
+    let reminderTimer = null;
+
+    function parseHHMM(val){
+      const [h,m] = val.split(':').map(Number);
+      return {h, m};
+    }
+
+    function nextBedtimeDate(h, m){
+      const now = new Date();
+      const t = new Date(now);
+      t.setHours(h, m, 0, 0);
+      if(t <= now) t.setDate(t.getDate()+1);
+      return t;
+    }
+
+    function formatLeft(ms){
+      const total = Math.max(0, Math.floor(ms/1000));
+      const h = Math.floor(total/3600);
+      const m = Math.floor((total%3600)/60);
+      const s = total%60;
+      const parts = [];
+      if(h) parts.push(h+'h');
+      if(h || m) parts.push(m+'m');
+      parts.push(s+'s');
+      return parts.join(' ');
+    }
+
+    function updateCountdown(){
+      const {h,m} = parseHHMM(bedtimeInput.value || '23:00');
+      const target = nextBedtimeDate(h,m);
+      const left = target - new Date();
+      countdownBox.textContent = 'Wind-down in ' + formatLeft(left);
+    }
+
+    bedtimeInput.addEventListener('input', ()=>{
+      scheduleReminder();
+      updateCountdown();
+    });
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+
+    // Reminder 20 minutes before bedtime
+    function scheduleReminder(){
+      if(reminderTimer) { clearTimeout(reminderTimer); reminderTimer = null; }
+      reminderStatus.textContent = '';
+      if(!reminderToggle.checked) return;
+
+      const {h,m} = parseHHMM(bedtimeInput.value || '23:00');
+      const target = nextBedtimeDate(h,m);
+      const remindAt = new Date(target - 20*60*1000);
+      const delay = remindAt - new Date();
+      if(delay <= 0){
+        showReminder();
+      }else{
+        reminderTimer = setTimeout(showReminder, delay);
+        reminderStatus.textContent = 'Reminder set for ' + remindAt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      }
+    }
+    reminderToggle.addEventListener('change', scheduleReminder);
+
+    function showReminder(){
+      const note = document.createElement('div');
+      note.setAttribute('role','status');
+      note.style.position='fixed';
+      note.style.bottom='16px';
+      note.style.left='50%';
+      note.style.transform='translateX(-50%)';
+      note.style.background='linear-gradient(135deg,var(--accent),#60a5fa)';
+      note.style.color='#0b1020';
+      note.style.padding='12px 16px';
+      note.style.borderRadius='12px';
+      note.style.boxShadow='var(--shadow)';
+      note.style.zIndex='1000';
+      note.textContent='Time to soften the day. Ready to start your wind‑down?';
+      document.body.appendChild(note);
+      setTimeout(()=> note.remove(), 9000);
+    }
+
+    // Breathing 4-7-8
+    const startBreath = $('#startBreath');
+    const breathBar = $('#breathBar');
+    const breathStatus = $('#breathStatus');
+
+    function animateBar(durationMs){
+      breathBar.style.transition = 'none';
+      breathBar.style.width = '0%';
+      requestAnimationFrame(()=>{
+        breathBar.style.transition = 'width ' + (durationMs/1000) + 's linear';
+        breathBar.style.width = '100%';
+      });
+    }
+
+    startBreath.addEventListener('click', async ()=>{
+      startBreath.disabled = true;
+      breathStatus.textContent = 'Round 1/3 — Inhale 4';
+      $('#step1').classList.add('active');
+
+      const phases = [
+        {label:'Inhale 4', ms:4000},
+        {label:'Hold 7', ms:7000},
+        {label:'Exhale 8', ms:8000}
+      ];
+      for(let round=1; round<=3; round++){
+        for(const p of phases){
+          breathStatus.textContent = `Round ${round}/3 — ${p.label}`;
+          animateBar(p.ms);
+          await new Promise(r=>setTimeout(r, p.ms+50));
+          breathBar.style.width = '0%';
+        }
+      }
+      breathStatus.textContent = 'Complete. Notice the softening.';
+      $('#step2').classList.add('active');
+      startBreath.disabled = false;
+    });
+
+    // Stretch 2:00
+    const startStretch = $('#startStretch');
+    const stretchStatus = $('#stretchStatus');
+    startStretch.addEventListener('click', async ()=>{
+      startStretch.disabled = true;
+      let seconds = 120;
+      const tick = ()=>{
+        const m = Math.floor(seconds/60).toString().padStart(1,'0');
+        const s = (seconds%60).toString().padStart(2,'0');
+        stretchStatus.textContent = `Time left ${m}:${s}`;
+        seconds--;
+        if(seconds < 0){
+          clearInterval(id);
+          stretchStatus.textContent = 'Done. Keep movements slow.';
+          $('#step3').classList.add('active');
+          startStretch.disabled = false;
+        }
+      };
+      tick();
+      const id = setInterval(tick, 1000);
+    });
+
+    // Journal save
+    const journal = $('#journal');
+    const saveJournal = $('#saveJournal');
+    const journalStatus = $('#journalStatus');
+    saveJournal.addEventListener('click', ()=>{
+      const text = journal.value.trim();
+      if(!text){ journalStatus.textContent = 'Write a line or two first.'; return; }
+      const key = 'sta_journal';
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.unshift({ts: Date.now(), text});
+      localStorage.setItem(key, JSON.stringify(arr.slice(0,30)));
+      journal.value = '';
+      journalStatus.textContent = 'Saved. Your words can be soft and brief.';
+      $('#step4').classList.add('active');
+    });
+
+    // Sounds player
+    const player = $('#player');
+    const soundStatus = $('#soundStatus');
+    let currentCard = null;
+
+    function setPlaying(card, playing){
+      const btn = card.querySelector('.play');
+      if(playing){
+        btn.classList.add('active');
+        btn.textContent = 'Pause';
+        soundStatus.textContent = 'Playing: ' + card.querySelector('.title').innerText;
+      }else{
+        btn.classList.remove('active');
+        btn.textContent = 'Play';
+      }
+    }
+
+    $$('#soundList .sound').forEach(card=>{
+      card.querySelector('.play').addEventListener('click', ()=>{
+        const src = card.getAttribute('data-src');
+        if(currentCard === card && !player.paused){
+          player.pause(); setPlaying(card,false); currentCard=null; soundStatus.textContent='Paused.';
+          return;
+        }
+        if(currentCard){ setPlaying(currentCard,false); }
+        player.src = src;
+        player.loop = true;
+        player.volume = 0.25;
+        player.play().then(()=>{
+          currentCard = card;
+          setPlaying(card,true);
+        }).catch(()=>{
+          soundStatus.textContent = 'Could not play. Add your MP3 at ' + src;
+        });
+      });
+    });
+    player.addEventListener('ended', ()=>{ if(currentCard) setPlaying(currentCard,false); });
+    player.addEventListener('pause', ()=>{ if(currentCard) setPlaying(currentCard,false); });
+
+    // Tracker
+    const logForm = $('#logForm');
+    const logTable = $('#logTable');
+    const logStatus = $('#logStatus');
+
+    function loadLogs(){
+      return JSON.parse(localStorage.getItem('sta_logs') || '[]');
+    }
+    function saveLogs(arr){
+      localStorage.setItem('sta_logs', JSON.stringify(arr));
+    }
+    function diffHours(bed, wake){
+      // returns hours (number) from bed to wake, handling next-day wrap
+      const [bh,bm] = bed.split(':').map(Number);
+      const [wh,wm] = wake.split(':').map(Number);
+      const d1 = new Date(); d1.setHours(bh,bm,0,0);
+      const d2 = new Date(); d2.setHours(wh,wm,0,0);
+      if(d2 <= d1) d2.setDate(d2.getDate()+1);
+      return +( (d2 - d1) / (1000*60*60) ).toFixed(2);
+    }
+    function renderLogs(){
+      const rows = loadLogs().slice(0,7).map(entry=>{
+        const tr = document.createElement('tr');
+        const d = new Date(entry.date);
+        const dateStr = d.toLocaleDateString([], {year:'numeric', month:'short', day:'2-digit'});
+        tr.innerHTML = `<td>${dateStr}</td><td><span class="pill">${entry.duration} h</span></td><td>${entry.mood}</td>`;
+        return tr;
+      });
+      logTable.innerHTML = '';
+      rows.forEach(r=>logTable.appendChild(r));
+    }
+    function defaultTimes(){
+      const now = new Date();
+      const today = now.toISOString().slice(0,10);
+      $('#logDate').value = today;
+      $('#logBed').value = '23:00';
+      $('#logWake').value = '07:00';
+    }
+    defaultTimes(); renderLogs();
+
+    logForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      const date = $('#logDate').value;
+      const bed = $('#logBed').value;
+      const wake = $('#logWake').value;
+      const mood = $('#logMood').value;
+      const duration = diffHours(bed, wake);
+      const logs = loadLogs();
+      logs.unshift({date, bed, wake, mood, duration});
+      saveLogs(logs);
+      renderLogs();
+      logStatus.textContent = 'Saved. Gentle consistency beats perfection.';
+    });
+
+    // Nightly tip
+    const tips = [
+      'Dim lights 60–90 minutes before bed. Darkness teaches your body it’s safe to rest.',
+      'Keep your wind‑down the same order nightly. The body trusts rhythms.',
+      'Aim for cool, quiet, and a touch of weight—a blanket your nervous system believes.',
+      'If thoughts are loud, breathe out longer than you breathe in. Let the exhale carry the day away.',
+      'Screens bright? Drop brightness to minimum and switch to warm tones.',
+      'Tomorrow can hold what you set down tonight. One line of journaling is enough.',
+      'If you wake at night, stay gentle. No fixing, just soft presence plus a slow exhale.'
+    ];
+    const dayIndex = Math.floor((Date.now()/(1000*60*60*24))) % tips.length;
+    $('#tipText').textContent = tips[dayIndex];
+
+    // Contact demo
+    $('#contactForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(this).entries());
+      alert(`Thank you, ${data.name}. I’ll reply at ${data.email}. Sleep well tonight.`);
+      this.reset();
+    });
+
+    // Initial reminder scheduling
+    scheduleReminder();
+  </script>
+</body>
+</html>
+
